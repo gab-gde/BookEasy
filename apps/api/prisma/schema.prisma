@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  @@map("admin_users")
+}
+
+model Service {
+  id          String    @id @default(uuid())
+  name        String
+  durationMin Int       @default(60)
+  priceCents  Int       @default(0)
+  description String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  bookings    Booking[]
+  @@map("services")
+}
+
+model AvailabilityRule {
+  id          String   @id @default(uuid())
+  dayOfWeek   Int      @unique
+  startTime   String
+  endTime     String
+  slotStepMin Int      @default(30)
+  capacity    Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@map("availability_rules")
+}
+
+model AvailabilityException {
+  id              String   @id @default(uuid())
+  date            DateTime @unique @db.Date
+  isClosed        Boolean  @default(false)
+  customStartTime String?
+  customEndTime   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@map("availability_exceptions")
+}
+
+model Booking {
+  id            String        @id @default(uuid())
+  serviceId     String
+  service       Service       @relation(fields: [serviceId], references: [id])
+  startAt       DateTime
+  endAt         DateTime
+  customerName  String
+  customerEmail String
+  customerPhone String?
+  customerNote  String?
+  status        String        @default("PENDING")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  notes         BookingNote[]
+  @@index([serviceId])
+  @@index([startAt])
+  @@index([status])
+  @@map("bookings")
+}
+
+model BookingNote {
+  id        String   @id @default(uuid())
+  bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime @default(now())
+  @@index([bookingId])
+  @@map("booking_notes")
+}
