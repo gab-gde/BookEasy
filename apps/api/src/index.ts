@@ -3,7 +3,9 @@ import swaggerUi from "swagger-ui-express";
 import swaggerJsdoc from "swagger-jsdoc";
 
 const app = express();
-const PORT = 3001;
+
+// ✅ Render injecte PORT, sinon fallback local
+const PORT = Number(process.env.PORT) || 3001;
 
 app.use(express.json());
 
@@ -15,19 +17,14 @@ const swaggerSpec = swaggerJsdoc({
       title: "BookEasy API",
       version: "1.0.0",
     },
-    servers: [
-      {
-        url: "http://localhost:3001",
-      },
-    ],
+    // ✅ marche en local ET en prod (Render/Vercel)
+    servers: [{ url: "/" }],
   },
   apis: ["./src/**/*.ts"],
 });
 
-// ⚠️ IMPORTANT : use setup(spec) directement
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Health check
 app.get("/health", (_, res) => {
   res.json({ status: "ok" });
 });
