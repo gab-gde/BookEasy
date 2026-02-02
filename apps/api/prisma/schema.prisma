@@ -1,0 +1,112 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// Admin User
+// ==========================================
+model AdminUser {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("admin_users")
+}
+
+// ==========================================
+// Service (what can be booked)
+// ==========================================
+model Service {
+  id          String    @id @default(uuid())
+  name        String
+  durationMin Int       @default(60)
+  priceCents  Int       @default(0)
+  description String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  bookings    Booking[]
+
+  @@map("services")
+}
+
+// ==========================================
+// Availability Rules (weekly schedule)
+// ==========================================
+model AvailabilityRule {
+  id          String   @id @default(uuid())
+  dayOfWeek   Int      // 0 = Monday, 6 = Sunday
+  startTime   String   // HH:mm format
+  endTime     String   // HH:mm format
+  slotStepMin Int      @default(30) // Slot duration/step in minutes
+  capacity    Int      @default(1) // Max bookings per slot
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([dayOfWeek])
+  @@map("availability_rules")
+}
+
+// ==========================================
+// Availability Exceptions (holidays, custom days)
+// ==========================================
+model AvailabilityException {
+  id              String   @id @default(uuid())
+  date            DateTime
+  isClosed        Boolean  @default(false)
+  customStartTime String?  // Override start time
+  customEndTime   String?  // Override end time
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([date])
+  @@map("availability_exceptions")
+}
+
+// ==========================================
+// Booking
+// ==========================================
+model Booking {
+  id            String        @id @default(uuid())
+  serviceId     String
+  service       Service       @relation(fields: [serviceId], references: [id])
+  startAt       DateTime
+  endAt         DateTime
+  customerName  String
+  customerEmail String
+  customerPhone String?
+  customerNote  String?
+  status        String        @default("PENDING") // PENDING, CONFIRMED, CANCELLED, COMPLETED
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  notes         BookingNote[]
+
+  @@index([serviceId])
+  @@index([startAt])
+  @@index([status])
+  @@map("bookings")
+}
+
+// ==========================================
+// Booking Notes (internal admin notes)
+// ==========================================
+model BookingNote {
+  id        String   @id @default(uuid())
+  bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([bookingId])
+  @@map("booking_notes")
+}
